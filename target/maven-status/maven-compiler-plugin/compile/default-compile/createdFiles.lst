@@ -1,4 +1,5 @@
 com\selda\rag\BatchAnalyzer$FileAnalysis.class
+com\selda\rag\ReportGenerator.class
 com\selda\rag\OllamaClient.class
 com\selda\rag\BatchAnalyzer.class
 com\selda\rag\App.class

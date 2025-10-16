@@ -25,19 +25,20 @@ public class OllamaClient {
         // Kullanım talimatları
         if (args.length > 0 && (args[0].equals("-h") || args[0].equals("--help"))) {
             System.out.println("Kullanım:");
-            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar [dosya_yolu] [--output çıktı.json]");
-            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --batch [klasör_yolu] [çıktı.json]");
-            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --files dosya1.pdf dosya2.docx [--output çıktı.json]");
+            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar [dosya_yolu] [--output çıktı.json] [--report html|pdf]");
+            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --batch [klasör_yolu] [çıktı.json] [--report html|pdf]");
+            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --files dosya1.pdf dosya2.docx [--output çıktı.json] [--report html|pdf]");
             System.out.println("");
             System.out.println("Örnekler:");
             System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar requirements.pdf");
-            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar document.docx --output sonuc.json");
-            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --batch ./requirements/ analiz.json");
-            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --files req1.pdf req2.docx --output sonuc.json");
+            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar document.docx --output sonuc.json --report html");
+            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --batch ./requirements/ analiz.json --report pdf");
+            System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar --files req1.pdf req2.docx --output sonuc.json --report html");
             System.out.println("  java -jar ba-llm-1.0-SNAPSHOT.jar  (varsayılan test metni)");
             System.out.println("");
             System.out.println("Desteklenen formatlar: PDF (.pdf), Word (.docx)");
             System.out.println("Çıktı: JSON formatında analiz sonuçları otomatik olarak dosyaya kaydedilir");
+            System.out.println("Rapor: HTML veya PDF formatında profesyonel rapor oluşturur");
             System.exit(0);
         }
         
@@ -50,11 +51,28 @@ public class OllamaClient {
             }
             
             String directoryPath = args[1];
-            String outputFile = args.length > 2 ? args[2] : "batch-analysis-result.json";
+            String outputFile = "batch-analysis-result.json";
+            String reportType = null;
+            
+            // Parametreleri parse et
+            for (int i = 2; i < args.length; i++) {
+                if (args[i].equals("--output") && i + 1 < args.length) {
+                    outputFile = args[i + 1];
+                    i++; // Bir sonraki argümanı atla
+                } else if (args[i].equals("--report") && i + 1 < args.length) {
+                    reportType = args[i + 1];
+                    i++; // Bir sonraki argümanı atla
+                } else if (!args[i].startsWith("--")) {
+                    outputFile = args[i];
+                }
+            }
             
             System.out.println("Batch analizi başlatılıyor...");
             System.out.println("Klasör: " + directoryPath);
             System.out.println("Çıktı dosyası: " + outputFile);
+            if (reportType != null) {
+                System.out.println("Rapor tipi: " + reportType);
+            }
             
             try {
                 BatchAnalyzer.BatchResult result = BatchAnalyzer.analyzeDirectory(directoryPath);
@@ -70,6 +88,12 @@ public class OllamaClient {
                 System.out.println("Başarılı: " + result.getSuccessfulFiles());
                 System.out.println("Başarısız: " + result.getFailedFiles());
                 System.out.println("Sonuç kaydedildi: " + outputFile);
+                
+                // Rapor oluştur
+                if (reportType != null) {
+                    generateBatchReport(result, outputFile, directoryPath, reportType);
+                }
+                
                 System.out.println("\nDetaylı JSON çıktısı:");
                 System.out.println(jsonOutput);
                 
@@ -91,11 +115,15 @@ public class OllamaClient {
             
             List<String> filePaths = new ArrayList<>();
             String outputFile = null;
+            String reportType = null;
             
             // Dosya yollarını ve çıktı dosyasını ayır
             for (int i = 1; i < args.length; i++) {
                 if (args[i].equals("--output") && i + 1 < args.length) {
                     outputFile = args[i + 1];
+                    i++; // Bir sonraki argümanı atla
+                } else if (args[i].equals("--report") && i + 1 < args.length) {
+                    reportType = args[i + 1];
                     i++; // Bir sonraki argümanı atla
                 } else {
                     filePaths.add(args[i]);
@@ -109,6 +137,9 @@ public class OllamaClient {
             System.out.println("Çoklu dosya analizi başlatılıyor...");
             System.out.println("Dosyalar: " + String.join(", ", filePaths));
             System.out.println("Çıktı dosyası: " + outputFile);
+            if (reportType != null) {
+                System.out.println("Rapor tipi: " + reportType);
+            }
             
             try {
                 BatchAnalyzer.BatchResult result = BatchAnalyzer.analyzeFiles(filePaths);
@@ -124,6 +155,12 @@ public class OllamaClient {
                 System.out.println("Başarılı: " + result.getSuccessfulFiles());
                 System.out.println("Başarısız: " + result.getFailedFiles());
                 System.out.println("Sonuç kaydedildi: " + outputFile);
+                
+                // Rapor oluştur
+                if (reportType != null) {
+                    generateBatchReport(result, outputFile, String.join(", ", filePaths), reportType);
+                }
+                
                 System.out.println("\nDetaylı JSON çıktısı:");
                 System.out.println(jsonOutput);
                 
@@ -137,13 +174,22 @@ public class OllamaClient {
         
         // Komut satırı argümanı kontrolü
         String outputFile = null;
+        String reportType = null;
         if (args.length > 0) {
             String filePath = args[0];
             
-            // Çıktı dosyası kontrolü
-            if (args.length > 1 && args[1].equals("--output") && args.length > 2) {
-                outputFile = args[2];
-            } else {
+            // Parametreleri parse et
+            for (int i = 1; i < args.length; i++) {
+                if (args[i].equals("--output") && i + 1 < args.length) {
+                    outputFile = args[i + 1];
+                    i++; // Bir sonraki argümanı atla
+                } else if (args[i].equals("--report") && i + 1 < args.length) {
+                    reportType = args[i + 1];
+                    i++; // Bir sonraki argümanı atla
+                }
+            }
+            
+            if (outputFile == null) {
                 // Dosya adından çıktı dosyası oluştur
                 String fileName = new java.io.File(filePath).getName();
                 outputFile = fileName.substring(0, fileName.lastIndexOf('.')) + "-analysis-result.json";
@@ -151,6 +197,9 @@ public class OllamaClient {
             
             System.out.println("Dosya okunuyor: " + filePath);
             System.out.println("Çıktı dosyası: " + outputFile);
+            if (reportType != null) {
+                System.out.println("Rapor tipi: " + reportType);
+            }
             
             if (!DocumentReader.fileExists(filePath)) {
                 System.err.println("Hata: Dosya bulunamadı: " + filePath);
@@ -230,6 +279,12 @@ public class OllamaClient {
                     System.out.println(MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(analysisResult));
                     System.out.println("\n✅ Analiz sonucu kaydedildi: " + outputFile);
                     
+                    // Rapor oluştur
+                    if (reportType != null) {
+                        String sourceFile = args.length > 0 ? args[0] : "varsayılan test metni";
+                        generateReport(analysisResult, outputFile, sourceFile, reportType);
+                    }
+                    
                 } catch (Exception e) {
                     System.out.println("Analysis result could not be parsed as JSON.");
                 }
@@ -274,5 +329,59 @@ public class OllamaClient {
         
         // Satır sonlarını temizle
         return jsonPart.replace("\n", "").replace("\r", "").trim();
+    }
+
+    /**
+     * Rapor oluşturur
+     */
+    private static void generateReport(JsonNode analysisResult, String jsonFile, String sourceFile, String reportType) {
+        try {
+            String baseFileName = jsonFile.replace("-analysis-result.json", "");
+            String reportFile;
+            
+            switch (reportType.toLowerCase()) {
+                case "html":
+                    reportFile = baseFileName + "-report.html";
+                    ReportGenerator.generateHTMLReport(analysisResult, reportFile, sourceFile);
+                    System.out.println("📄 HTML raporu oluşturuldu: " + reportFile);
+                    break;
+                case "pdf":
+                    reportFile = baseFileName + "-report.pdf";
+                    ReportGenerator.generatePDFReport(analysisResult, reportFile, sourceFile);
+                    System.out.println("📄 PDF raporu oluşturuldu: " + reportFile);
+                    break;
+                default:
+                    System.err.println("❌ Geçersiz rapor tipi: " + reportType + " (html veya pdf olmalı)");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Rapor oluşturma hatası: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Batch rapor oluşturur
+     */
+    private static void generateBatchReport(BatchAnalyzer.BatchResult batchResult, String jsonFile, String sourceInfo, String reportType) {
+        try {
+            String baseFileName = jsonFile.replace("-analysis-result.json", "");
+            String reportFile;
+            
+            switch (reportType.toLowerCase()) {
+                case "html":
+                    reportFile = baseFileName + "-report.html";
+                    ReportGenerator.generateBatchHTMLReport(batchResult, reportFile);
+                    System.out.println("📄 Batch HTML raporu oluşturuldu: " + reportFile);
+                    break;
+                case "pdf":
+                    reportFile = baseFileName + "-report.pdf";
+                    ReportGenerator.generateBatchPDFReport(batchResult, reportFile);
+                    System.out.println("📄 Batch PDF raporu oluşturuldu: " + reportFile);
+                    break;
+                default:
+                    System.err.println("❌ Geçersiz rapor tipi: " + reportType + " (html veya pdf olmalı)");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Batch rapor oluşturma hatası: " + e.getMessage());
+        }
     }
 }
