@@ -1,0 +1,6 @@
+{
+  "functionalRequirements" : [ "Create payment functionality for electricity bills via mobile banking application" ],
+  "nonFunctionalRequirements" : [ ],
+  "missingInformation" : [ ],
+  "priorityHints" : [ ]
+}

@@ -28,6 +28,25 @@
         <artifactId>okhttp</artifactId>
         <version>4.12.0</version>
     </dependency>
+    
+    <!-- PDF reading -->
+    <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>pdfbox</artifactId>
+        <version>2.0.29</version>
+    </dependency>
+    
+    <!-- Word document reading -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>5.2.4</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.2.4</version>
+    </dependency>
 
 </dependencies>
 
