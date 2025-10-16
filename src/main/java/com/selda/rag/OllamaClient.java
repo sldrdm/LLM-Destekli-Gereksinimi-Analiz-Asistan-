@@ -35,9 +35,9 @@ public class OllamaClient {
 
         // Request body
         String requestBody = MAPPER.createObjectNode()
-                .put("model", "llama3:latest")
-                .put("prompt", prompt)
-                .put("stream", false)
+                .put("model",  "llama3:latest")
+                .put("prompt",  prompt)
+                .put("stream",  false)
                 .toString();
 
         RequestBody body = RequestBody.create(
