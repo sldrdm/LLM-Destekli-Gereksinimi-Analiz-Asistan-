@@ -1,4 +1,4 @@
-# BA-LLM: LLM Destekli Gereksinim Analizi Asistanı
+# BA-LLM Destekli Gereksinim Analizi Asistanı
 
 Bu proje, PDF ve Word dosyalarından gereksinim analizi yapan, Ollama ile entegre çalışan bir Java uygulamasıdır.
 
