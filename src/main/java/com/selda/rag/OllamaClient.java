@@ -384,4 +384,47 @@ public class OllamaClient {
             System.err.println("❌ Batch rapor oluşturma hatası: " + e.getMessage());
         }
     }
+
+    /**
+     * Web arayüzü için metin analizi
+     */
+    public static JsonNode analyzeText(String prompt) throws IOException {
+        String requestBody = MAPPER.createObjectNode()
+                .put("model", "llama3:latest")
+                .put("prompt", prompt)
+                .put("stream", false)
+                .toString();
+
+        RequestBody body = RequestBody.create(
+                MediaType.parse("application/json"), requestBody);
+
+        Request request = new Request.Builder()
+                .url(OLLAMA_URL)
+                .post(body)
+                .build();
+
+        Response response = CLIENT.newCall(request).execute();
+        String responseBody = response.body().string();
+
+        if (!response.isSuccessful()) {
+            throw new IOException("Ollama API hatası: " + response.code() + " - " + responseBody);
+        }
+
+        JsonNode root = MAPPER.readTree(responseBody);
+        JsonNode analysisResult = null;
+
+        if (root.has("response")) {
+            String responseText = root.get("response").asText();
+            try {
+                String jsonPart = extractJsonFromResponse(responseText);
+                analysisResult = MAPPER.readTree(jsonPart);
+            } catch (Exception e) {
+                throw new IOException("JSON parse hatası: " + responseText);
+            }
+        } else {
+            throw new IOException("Geçersiz yanıt formatı");
+        }
+
+        return analysisResult;
+    }
 }

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">BA-LLM Gereksinim Analizi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            max-width: 1200px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 3rem;
+        }
+        
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+        
+        .upload-area.dragover {
+            border-color: #4CAF50;
+            background: #e8f5e8;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #4CAF50;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-analyze {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-analyze:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            display: none;
+            margin: 2rem 0;
+        }
+        
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+        }
+        
+        .requirement-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .requirement-card.functional {
+            border-left-color: #2196F3;
+        }
+        
+        .requirement-card.non-functional {
+            border-left-color: #FF9800;
+        }
+        
+        .requirement-card.missing {
+            border-left-color: #f44336;
+        }
+        
+        .requirement-card.priority {
+            border-left-color: #9C27B0;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .requirement-item {
+            background: #f8f9fa;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+            border-left: 3px solid #ddd;
+        }
+        
+        .tab-content {
+            margin-top: 2rem;
+        }
+        
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            border: none;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .file-info {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            padding: 1.5rem;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .loading-spinner.show {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <div class="header">
+                <h1><i class="fas fa-brain"></i> BA-LLM</h1>
+                <p>LLM Destekli Gereksinim Analizi Asistanı</p>
+                <small>Son güncelleme: <span th:text="${currentTime}"></span></small>
+            </div>
+            
+            <div class="content">
+                <!-- Dosya Yükleme Alanı -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3><i class="fas fa-upload"></i> Dosya Analizi</h3>
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h4>Dosyanızı buraya sürükleyin</h4>
+                            <p class="text-muted">veya tıklayarak seçin</p>
+                            <p><small>Desteklenen formatlar: PDF, DOCX (Max: 10MB)</small></p>
+                            <input type="file" id="fileInput" accept=".pdf,.docx" style="display: none;">
+                        </div>
+                        
+                        <div class="file-info" id="fileInfo" style="display: none;">
+                            <h5><i class="fas fa-file"></i> Seçilen Dosya</h5>
+                            <p id="fileName"></p>
+                            <p id="fileSize"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h3><i class="fas fa-keyboard"></i> Metin Analizi</h3>
+                        <div class="mb-3">
+                            <label for="textInput" class="form-label">Gereksinim metnini buraya yazın:</label>
+                            <textarea class="form-control" id="textInput" rows="8" 
+                                      placeholder="Örnek: Sistem, kullanıcı girişini doğrulamalıdır. Hatalı giriş yapıldığında kullanıcıya uygun bir hata mesajı gösterilmelidir..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analiz Seçenekleri -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5><i class="fas fa-cog"></i> Analiz Seçenekleri</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Rapor Formatı:</label>
+                                        <select class="form-select" id="reportType">
+                                            <option value="none">Sadece Ekranda Göster</option>
+                                            <option value="html">HTML Raporu</option>
+                                            <option value="pdf">PDF Raporu</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button class="btn btn-analyze w-100" id="analyzeBtn" disabled>
+                                            <i class="fas fa-search loading-spinner"></i>
+                                            <span class="btn-text">Analizi Başlat</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Yükleniyor...</span>
+                            </div>
+                            <h5>Analiz yapılıyor...</h5>
+                            <p class="text-muted">Lütfen bekleyin, bu işlem birkaç dakika sürebilir.</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sonuçlar -->
+                <div class="result-container" id="resultContainer">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4><i class="fas fa-chart-bar"></i> Analiz Sonuçları</h4>
+                            <div id="fileDetails" class="file-info" style="display: none;"></div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Nav Tabs -->
+                            <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="functional-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#functional" type="button" role="tab">
+                                        <i class="fas fa-cogs"></i> Fonksiyonel
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="nonfunctional-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#nonfunctional" type="button" role="tab">
+                                        <i class="fas fa-shield-alt"></i> Fonksiyonel Olmayan
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="missing-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#missing" type="button" role="tab">
+                                        <i class="fas fa-exclamation-triangle"></i> Eksik Bilgiler
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="priority-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#priority" type="button" role="tab">
+                                        <i class="fas fa-flag"></i> Öncelik İpuçları
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- Tab Content -->
+                            <div class="tab-content" id="resultTabContent">
+                                <div class="tab-pane fade show active" id="functional" role="tabpanel">
+                                    <div class="requirement-card functional">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-cogs"></i> Fonksiyonel Gereksinimler
+                                        </h5>
+                                        <div id="functionalRequirements"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="tab-pane fade" id="nonfunctional" role="tabpanel">
+                                    <div class="requirement-card non-functional">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-shield-alt"></i> Fonksiyonel Olmayan Gereksinimler
+                                        </h5>
+                                        <div id="nonFunctionalRequirements"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="tab-pane fade" id="missing" role="tabpanel">
+                                    <div class="requirement-card missing">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-exclamation-triangle"></i> Eksik Bilgiler
+                                        </h5>
+                                        <div id="missingInformation"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="tab-pane fade" id="priority" role="tabpanel">
+                                    <div class="requirement-card priority">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-flag"></i> Öncelik İpuçları
+                                        </h5>
+                                        <div id="priorityHints"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Rapor İndirme -->
+                            <div id="reportDownload" class="mt-3" style="display: none;">
+                                <div class="alert alert-success alert-custom">
+                                    <h5><i class="fas fa-download"></i> Rapor Hazır!</h5>
+                                    <p>Analiz raporunuz hazırlandı. İndirmek için aşağıdaki butona tıklayın.</p>
+                                    <a href="#" id="downloadLink" class="btn btn-success">
+                                        <i class="fas fa-download"></i> Raporu İndir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hata Mesajları -->
+                <div id="errorContainer" class="mt-3" style="display: none;">
+                    <div class="alert alert-danger alert-custom">
+                        <h5><i class="fas fa-exclamation-circle"></i> Hata!</h5>
+                        <p id="errorMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/app.js}"></script>
+</body>
+</html>
