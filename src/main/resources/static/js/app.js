@@ -10,9 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultContainer = document.getElementById('resultContainer');
     const errorContainer = document.getElementById('errorContainer');
     const reportDownload = document.getElementById('reportDownload');
+    const modelSelect = document.getElementById('modelSelect');
+    const modelInfo = document.getElementById('modelInfo');
+    const switchModelBtn = document.getElementById('switchModelBtn');
     
     let selectedFile = null;
     let isAnalyzing = false;
+    let availableModels = [];
+    let currentModel = null;
 
     // Dosya yükleme alanı event listeners
     uploadArea.addEventListener('click', () => fileInput.click());
@@ -26,6 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Analiz butonu
     analyzeBtn.addEventListener('click', startAnalysis);
+    
+    // Model seçimi
+    modelSelect.addEventListener('change', handleModelSelect);
+    switchModelBtn.addEventListener('click', switchModel);
 
     function handleDragOver(e) {
         e.preventDefault();
@@ -132,6 +141,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         formData.append('reportType', reportType);
+        
+        // Model seçimi ekle
+        const selectedModel = modelSelect.value;
+        if (selectedModel) {
+            formData.append('modelName', selectedModel);
+        }
 
         const endpoint = hasFile ? '/analyze' : '/analyze-text';
 
@@ -260,6 +275,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
+    // Model bilgilerini yükle
+    loadModelInfo();
+    
     // Sayfa yüklendiğinde metin alanına odaklan
     textInput.focus();
     
@@ -271,4 +289,100 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Model yönetimi fonksiyonları
+    function loadModelInfo() {
+        fetch('/api/models')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    availableModels = data.data.availableModels || [];
+                    currentModel = data.data.currentModel;
+                    updateModelSelect();
+                    updateModelInfo();
+                }
+            })
+            .catch(error => {
+                console.error('Model bilgileri yüklenemedi:', error);
+            });
+    }
+
+    function updateModelSelect() {
+        modelSelect.innerHTML = '<option value="">Aktif model kullan</option>';
+        
+        availableModels.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.name;
+            option.textContent = `${model.displayName} (${model.speed}, ${model.memoryUsage})`;
+            modelSelect.appendChild(option);
+        });
+    }
+
+    function updateModelInfo() {
+        if (currentModel) {
+            modelInfo.textContent = `Aktif: ${currentModel.displayName} - ${currentModel.speed} (${currentModel.memoryUsage})`;
+        }
+    }
+
+    function handleModelSelect() {
+        const selectedModel = modelSelect.value;
+        switchModelBtn.disabled = !selectedModel;
+        
+        if (selectedModel) {
+            const model = availableModels.find(m => m.name === selectedModel);
+            if (model) {
+                modelInfo.innerHTML = `Seçilen: ${model.displayName}<br>` +
+                    `<small>Hız: ${model.speed} | Bellek: ${model.memoryUsage} | Kalite: ${model.quality}</small>`;
+            }
+        } else {
+            updateModelInfo();
+        }
+    }
+
+    function switchModel() {
+        const selectedModel = modelSelect.value;
+        if (!selectedModel) return;
+        
+        const formData = new FormData();
+        formData.append('modelName', selectedModel);
+        
+        switchModelBtn.disabled = true;
+        switchModelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Değiştiriliyor...';
+        
+        fetch('/api/models/switch', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentModel = data.currentModel;
+                updateModelInfo();
+                modelSelect.value = '';
+                switchModelBtn.disabled = true;
+                showSuccessMessage('Model başarıyla değiştirildi: ' + currentModel.displayName);
+            } else {
+                showError('Model değiştirilemedi: ' + data.error);
+            }
+        })
+        .catch(error => {
+            showError('Model değiştirme hatası: ' + error.message);
+        })
+        .finally(() => {
+            switchModelBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Model Değiştir';
+        });
+    }
+
+    function showSuccessMessage(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-custom mt-3';
+        successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        
+        const container = document.querySelector('.content');
+        container.insertBefore(successDiv, container.firstChild);
+        
+        setTimeout(() => {
+            successDiv.remove();
+        }, 5000);
+    }
 });

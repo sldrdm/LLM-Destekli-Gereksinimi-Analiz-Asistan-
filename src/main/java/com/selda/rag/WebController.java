@@ -28,6 +28,13 @@ public class WebController {
     public String index(Model model) {
         model.addAttribute("title", "BA-LLM Gereksinim Analizi");
         model.addAttribute("currentTime", LocalDateTime.now().format(DATE_FORMAT));
+        
+        // Model bilgilerini ekle
+        Map<String, Object> modelInfo = OllamaClient.getModelInfo();
+        model.addAttribute("currentModel", modelInfo.get("currentModel"));
+        model.addAttribute("availableModels", modelInfo.get("availableModels"));
+        model.addAttribute("modelStatus", modelInfo.get("modelStatus"));
+        
         return "index";
     }
 
@@ -36,6 +43,7 @@ public class WebController {
     public Map<String, Object> analyzeFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "reportType", defaultValue = "none") String reportType,
+            @RequestParam(value = "modelName", required = false) String modelName,
             HttpServletRequest request) {
         
         Map<String, Object> response = new HashMap<>();
@@ -71,8 +79,8 @@ public class WebController {
             // Dosyayı analiz et
             String content = DocumentReader.readDocument(filePath.toString());
             
-            // Ollama ile analiz yap
-            JsonNode analysisResult = performAnalysis(content);
+            // Ollama ile analiz yap (belirtilen model ile)
+            JsonNode analysisResult = performAnalysis(content, modelName);
             
             // Sonuçları hazırla
             response.put("success", true);
@@ -105,6 +113,7 @@ public class WebController {
     public Map<String, Object> analyzeText(
             @RequestParam("text") String text,
             @RequestParam(value = "reportType", defaultValue = "none") String reportType,
+            @RequestParam(value = "modelName", required = false) String modelName,
             HttpServletRequest request) {
         
         Map<String, Object> response = new HashMap<>();
@@ -116,8 +125,8 @@ public class WebController {
                 return response;
             }
 
-            // Ollama ile analiz yap
-            JsonNode analysisResult = performAnalysis(text.trim());
+            // Ollama ile analiz yap (belirtilen model ile)
+            JsonNode analysisResult = performAnalysis(text.trim(), modelName);
             
             // Sonuçları hazırla
             response.put("success", true);
@@ -159,20 +168,12 @@ public class WebController {
         }
     }
 
-    private JsonNode performAnalysis(String content) throws IOException {
-        // OllamaClient'daki analiz mantığını kullan
-        String prompt = "Respond ONLY with valid JSON matching this schema:\n" +
-                "{\n" +
-                "  \"functionalRequirements\": [\"string\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"string\"],\n" +
-                "  \"missingInformation\": [\"string\"],\n" +
-                "  \"priorityHints\": [\"string\"]\n" +
-                "}\n" +
-                "ORIGINAL requirement:\n" +
-                content;
-
-        // OllamaClient'dan analiz yap
-        return OllamaClient.analyzeText(prompt);
+    private JsonNode performAnalysis(String content, String modelName) throws IOException {
+        // ModelManager'dan prompt template kullan
+        String prompt = ModelManager.getInstance().buildPrompt(content);
+        
+        // OllamaClient'dan analiz yap (belirtilen model ile)
+        return OllamaClient.analyzeText(prompt, modelName);
     }
 
     private String generateReport(JsonNode analysisResult, String sourceName, String reportType, HttpServletRequest request) throws IOException {
@@ -199,5 +200,58 @@ public class WebController {
         }
         
         return null;
+    }
+
+    // Model yönetimi endpoint'leri
+    @GetMapping("/api/models")
+    @ResponseBody
+    public Map<String, Object> getModels() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Map<String, Object> modelInfo = OllamaClient.getModelInfo();
+            response.put("success", true);
+            response.put("data", modelInfo);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());
+        }
+        return response;
+    }
+
+    @PostMapping("/api/models/switch")
+    @ResponseBody
+    public Map<String, Object> switchModel(@RequestParam("modelName") String modelName) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            boolean success = OllamaClient.setModel(modelName);
+            if (success) {
+                response.put("success", true);
+                response.put("message", "Model başarıyla değiştirildi");
+                response.put("currentModel", OllamaClient.getModelInfo().get("currentModel"));
+            } else {
+                response.put("success", false);
+                response.put("error", "Model değiştirilemedi: " + modelName);
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());
+        }
+        return response;
+    }
+
+    @PostMapping("/api/models/parameters")
+    @ResponseBody
+    public Map<String, Object> updateModelParameters(@RequestBody Map<String, Object> parameters) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            // Bu endpoint gelecekte model parametrelerini güncellemek için kullanılabilir
+            response.put("success", true);
+            response.put("message", "Parametreler güncellendi");
+            response.put("parameters", parameters);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());
+        }
+        return response;
     }
 }

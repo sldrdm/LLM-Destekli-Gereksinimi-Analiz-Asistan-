@@ -2,11 +2,14 @@ package com.selda.rag;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class OllamaClient {
 
@@ -222,23 +225,23 @@ public class OllamaClient {
             System.out.println("Dosya yolu belirtilmedi, varsayılan test metni kullanılıyor.");
         }
 
-        // Prompt: JSON formatında yanıt iste
-        String prompt = "Respond ONLY with valid JSON matching this schema:\n" +
-                "{\n" +
-                "  \"functionalRequirements\": [\"string\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"string\"],\n" +
-                "  \"missingInformation\": [\"string\"],\n" +
-                "  \"priorityHints\": [\"string\"]\n" +
-                "}\n" +
-                "ORIGINAL requirement:\n" +
-                requirement;
+        // Prompt: ModelManager'dan template kullan
+        String prompt = ModelManager.getInstance().buildPrompt(requirement);
 
-        // Request body
-        String requestBody = MAPPER.createObjectNode()
-                .put("model",  "llama3:latest")
-                .put("prompt",  prompt)
-                .put("stream",  false)
-                .toString();
+        // Request body: ModelManager'dan parametreler al
+        Map<String, Object> params = ModelManager.getInstance().getModelParameters();
+        
+        ObjectNode requestNode = MAPPER.createObjectNode();
+        requestNode.put("model", (String) params.get("model"));
+        requestNode.put("prompt", prompt);
+        requestNode.put("stream", false);
+        
+        ObjectNode optionsNode = MAPPER.createObjectNode();
+        optionsNode.put("temperature", (Double) params.get("temperature"));
+        optionsNode.put("num_predict", (Integer) params.get("max_tokens"));
+        requestNode.set("options", optionsNode);
+        
+        String requestBody = requestNode.toString();
 
         RequestBody body = RequestBody.create(
                 MediaType.parse("application/json"), requestBody);
@@ -389,11 +392,45 @@ public class OllamaClient {
      * Web arayüzü için metin analizi
      */
     public static JsonNode analyzeText(String prompt) throws IOException {
-        String requestBody = MAPPER.createObjectNode()
-                .put("model", "llama3:latest")
-                .put("prompt", prompt)
-                .put("stream", false)
-                .toString();
+        return analyzeText(prompt, null);
+    }
+
+    /**
+     * Belirli model ile metin analizi
+     */
+    public static JsonNode analyzeText(String prompt, String modelName) throws IOException {
+        ModelManager modelManager = ModelManager.getInstance();
+        ModelConfig modelConfig;
+        
+        if (modelName != null) {
+            modelConfig = modelManager.getModel(modelName);
+            if (modelConfig == null) {
+                throw new IOException("Model bulunamadı: " + modelName);
+            }
+        } else {
+            modelConfig = modelManager.getCurrentModel();
+        }
+        
+        if (modelConfig == null) {
+            throw new IOException("Aktif model bulunamadı");
+        }
+
+        Map<String, Object> params = modelManager.getModelParameters();
+        if (modelName != null) {
+            params.put("model", modelName);
+        }
+
+        ObjectNode requestNode = MAPPER.createObjectNode();
+        requestNode.put("model", (String) params.get("model"));
+        requestNode.put("prompt", prompt);
+        requestNode.put("stream", false);
+        
+        ObjectNode optionsNode = MAPPER.createObjectNode();
+        optionsNode.put("temperature", (Double) params.get("temperature"));
+        optionsNode.put("num_predict", (Integer) params.get("max_tokens"));
+        requestNode.set("options", optionsNode);
+        
+        String requestBody = requestNode.toString();
 
         RequestBody body = RequestBody.create(
                 MediaType.parse("application/json"), requestBody);
@@ -426,5 +463,34 @@ public class OllamaClient {
         }
 
         return analysisResult;
+    }
+
+    /**
+     * Model bilgilerini al
+     */
+    public static Map<String, Object> getModelInfo() {
+        ModelManager modelManager = ModelManager.getInstance();
+        Map<String, Object> info = new HashMap<>();
+        
+        info.put("currentModel", modelManager.getCurrentModel());
+        info.put("availableModels", modelManager.getEnabledModels());
+        info.put("modelStatus", modelManager.getModelStatus());
+        info.put("parameters", modelManager.getModelParameters());
+        
+        return info;
+    }
+
+    /**
+     * Model değiştir
+     */
+    public static boolean setModel(String modelName) {
+        ModelManager modelManager = ModelManager.getInstance();
+        ModelConfig config = modelManager.getModel(modelName);
+        
+        if (config != null && config.isEnabled()) {
+            modelManager.setCurrentModel(modelName);
+            return true;
+        }
+        return false;
     }
 }

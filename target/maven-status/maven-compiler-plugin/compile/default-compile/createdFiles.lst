@@ -1,9 +1,14 @@
-com\selda\rag\BatchAnalyzer$FileAnalysis.class
+com\selda\rag\ModelPerformance$ComparisonResult.class
 com\selda\rag\ReportGenerator.class
+com\selda\rag\ModelPerformance.class
+com\selda\rag\WebApplication.class
+com\selda\rag\DocumentReader.class
+com\selda\rag\ModelConfig.class
+com\selda\rag\BatchAnalyzer$FileAnalysis.class
+com\selda\rag\ModelManager.class
 com\selda\rag\WebController.class
 com\selda\rag\OllamaClient.class
 com\selda\rag\BatchAnalyzer.class
+com\selda\rag\ModelPerformance$PerformanceResult.class
 com\selda\rag\App.class
-com\selda\rag\WebApplication.class
-com\selda\rag\DocumentReader.class
 com\selda\rag\BatchAnalyzer$BatchResult.class
