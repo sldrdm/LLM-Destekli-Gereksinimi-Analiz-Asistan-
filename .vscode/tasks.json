@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Maven: Clean",
+            "type": "shell",
+            "command": "mvn clean",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Maven: Compile",
+            "type": "shell",
+            "command": "mvn compile",
+            "problemMatcher": ["$tsc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Maven: Package",
+            "type": "shell",
+            "command": "mvn clean package -DskipTests",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Maven: Spring Boot Run",
+            "type": "shell",
+            "command": "mvn spring-boot:run",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Maven: Test",
+            "type": "shell",
+            "command": "mvn test",
+            "problemMatcher": [],
+            "group": "test"
+        }
+    ]
+}
+
+

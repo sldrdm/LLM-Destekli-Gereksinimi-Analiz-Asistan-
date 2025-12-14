@@ -112,51 +112,60 @@ public class ModelManager {
     }
     
     private String getDefaultPromptTemplate() {
-        return "Respond ONLY with valid JSON matching this schema:\n" +
+        return "IMPORTANT: You MUST respond with ONLY valid JSON. No explanations, no additional text before or after the JSON.\n\n" +
+                "Required JSON schema - each field must be an array of STRINGS (not objects):\n" +
                 "{\n" +
-                "  \"functionalRequirements\": [\"string\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"string\"],\n" +
-                "  \"missingInformation\": [\"string\"],\n" +
-                "  \"priorityHints\": [\"string\"]\n" +
-                "}\n" +
-                "Analyze the following requirement text and provide structured analysis:\n" +
+                "  \"functionalRequirements\": [\"string1\", \"string2\"],\n" +
+                "  \"nonFunctionalRequirements\": [\"string1\", \"string2\"],\n" +
+                "  \"missingInformation\": [\"string1\", \"string2\"],\n" +
+                "  \"priorityHints\": [\"string1\", \"string2\"]\n" +
+                "}\n\n" +
+                "CRITICAL: Each array element must be a plain string, NOT an object. Example: [\"item1\", \"item2\"], NOT [{\"text\": \"item1\"}]\n\n" +
+                "Analyze the following requirement text and respond with ONLY the JSON object (starting with { and ending with }):\n\n" +
                 "{content}";
     }
     
     private String getEnhancedPromptTemplate() {
-        return "You are an expert software requirements analyst. Respond ONLY with valid JSON matching this schema:\n" +
+        return "You are an expert software requirements analyst.\n\n" +
+                "CRITICAL: Respond with ONLY valid JSON. No explanations, no markdown, no code blocks, no text before or after.\n\n" +
+                "Required JSON schema - arrays must contain STRINGS, not objects:\n" +
                 "{\n" +
-                "  \"functionalRequirements\": [\"string\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"string\"],\n" +
-                "  \"missingInformation\": [\"string\"],\n" +
-                "  \"priorityHints\": [\"string\"]\n" +
-                "}\n" +
+                "  \"functionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
+                "  \"nonFunctionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
+                "  \"missingInformation\": [\"missing item 1\", \"missing item 2\"],\n" +
+                "  \"priorityHints\": [\"hint 1\", \"hint 2\"]\n" +
+                "}\n\n" +
+                "IMPORTANT: Each array must be an array of strings like [\"text1\", \"text2\"]. Do NOT use objects like [{\"text\": \"...\"}].\n\n" +
                 "Guidelines:\n" +
-                "- Functional requirements: What the system should do\n" +
-                "- Non-functional requirements: Performance, security, usability\n" +
-                "- Missing information: What additional details are needed\n" +
-                "- Priority hints: Suggested implementation priority\n" +
+                "- Functional requirements: What the system should do (as plain strings)\n" +
+                "- Non-functional requirements: Performance, security, usability (as plain strings)\n" +
+                "- Missing information: What additional details are needed (as plain strings)\n" +
+                "- Priority hints: Suggested implementation priority (as plain strings)\n\n" +
                 "Requirement text to analyze:\n" +
-                "{content}";
+                "{content}\n\n" +
+                "Remember: Respond with ONLY the JSON object with string arrays, nothing else.";
     }
     
     private String getDetailedPromptTemplate() {
-        return "You are a senior software architect and requirements analyst with 20+ years experience. " +
-                "Provide a comprehensive analysis in valid JSON format matching this schema:\n" +
+        return "You are a senior software architect and requirements analyst with 20+ years experience.\n\n" +
+                "CRITICAL: Your response must be ONLY valid JSON. No explanations, no markdown formatting, no code blocks, no text outside the JSON object.\n\n" +
+                "Required JSON schema - all arrays must contain STRINGS only:\n" +
                 "{\n" +
-                "  \"functionalRequirements\": [\"string\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"string\"],\n" +
-                "  \"missingInformation\": [\"string\"],\n" +
-                "  \"priorityHints\": [\"string\"]\n" +
-                "}\n" +
+                "  \"functionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
+                "  \"nonFunctionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
+                "  \"missingInformation\": [\"missing item 1\", \"missing item 2\"],\n" +
+                "  \"priorityHints\": [\"hint 1\", \"hint 2\"]\n" +
+                "}\n\n" +
+                "CRITICAL: Use string arrays [\"text1\", \"text2\"], NOT object arrays [{\"text\": \"...\"}]. Each element must be a plain string.\n\n" +
                 "Analysis Guidelines:\n" +
-                "- Functional: Specific system behaviors and capabilities\n" +
-                "- Non-functional: Performance, scalability, security, maintainability\n" +
-                "- Missing: Gaps in requirements, unclear specifications\n" +
-                "- Priority: Risk assessment and implementation order\n" +
-                "Consider technical feasibility, business value, and implementation complexity.\n" +
+                "- Functional: Specific system behaviors and capabilities (as string array)\n" +
+                "- Non-functional: Performance, scalability, security, maintainability (as string array)\n" +
+                "- Missing: Gaps in requirements, unclear specifications (as string array)\n" +
+                "- Priority: Risk assessment and implementation order (as string array)\n\n" +
+                "Consider technical feasibility, business value, and implementation complexity.\n\n" +
                 "Requirement text:\n" +
-                "{content}";
+                "{content}\n\n" +
+                "Respond with ONLY the JSON object with string arrays, starting with { and ending with }.";
     }
     
     private void loadFromFile() throws IOException {

@@ -1,14 +1,13 @@
 package com.selda.rag;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
+import com.selda.rag.ModelConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +19,6 @@ import java.util.*;
 @Controller
 public class WebController {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String UPLOAD_DIR = "uploads/";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
@@ -29,11 +27,18 @@ public class WebController {
         model.addAttribute("title", "BA-LLM Gereksinim Analizi");
         model.addAttribute("currentTime", LocalDateTime.now().format(DATE_FORMAT));
         
-        // Model bilgilerini ekle
-        Map<String, Object> modelInfo = OllamaClient.getModelInfo();
-        model.addAttribute("currentModel", modelInfo.get("currentModel"));
-        model.addAttribute("availableModels", modelInfo.get("availableModels"));
-        model.addAttribute("modelStatus", modelInfo.get("modelStatus"));
+        // Model bilgilerini ekle - basitleştirilmiş versiyon
+        // Template'de JavaScript ile yüklenecek, burada sadece temel bilgiler
+        try {
+            Map<String, Object> modelInfo = OllamaClient.getModelInfo();
+            String modelStatus = modelInfo.get("modelStatus") != null ? 
+                modelInfo.get("modelStatus").toString() : "Bilinmiyor";
+            model.addAttribute("modelStatus", modelStatus);
+        } catch (Exception e) {
+            model.addAttribute("modelStatus", "Model bilgisi yüklenemedi");
+            System.err.println("Model bilgisi yüklenirken hata: " + e.getMessage());
+            e.printStackTrace();
+        }
         
         return "index";
     }
@@ -99,9 +104,18 @@ public class WebController {
             // Geçici dosyayı sil
             Files.deleteIfExists(filePath);
 
+        } catch (IOException e) {
+            response.put("success", false);
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.contains("JSON parse hatası")) {
+                response.put("error", "Model yanıtı JSON formatında parse edilemedi. Model'in JSON döndürdüğünden emin olun. Hata: " + errorMsg);
+            } else {
+                response.put("error", "Analiz hatası: " + errorMsg);
+            }
+            e.printStackTrace();
         } catch (Exception e) {
             response.put("success", false);
-            response.put("error", "Analiz hatası: " + e.getMessage());
+            response.put("error", "Beklenmeyen hata: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -141,9 +155,18 @@ public class WebController {
                 response.put("reportType", reportType);
             }
 
+        } catch (IOException e) {
+            response.put("success", false);
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.contains("JSON parse hatası")) {
+                response.put("error", "Model yanıtı JSON formatında parse edilemedi. Model'in JSON döndürdüğünden emin olun. Hata: " + errorMsg);
+            } else {
+                response.put("error", "Analiz hatası: " + errorMsg);
+            }
+            e.printStackTrace();
         } catch (Exception e) {
             response.put("success", false);
-            response.put("error", "Analiz hatası: " + e.getMessage());
+            response.put("error", "Beklenmeyen hata: " + e.getMessage());
             e.printStackTrace();
         }
 

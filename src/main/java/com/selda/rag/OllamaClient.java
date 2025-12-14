@@ -244,7 +244,7 @@ public class OllamaClient {
         String requestBody = requestNode.toString();
 
         RequestBody body = RequestBody.create(
-                MediaType.parse("application/json"), requestBody);
+                requestBody, MediaType.get("application/json"));
 
         Request request = new Request.Builder()
                 .url(OLLAMA_URL)
@@ -303,37 +303,155 @@ public class OllamaClient {
     }
 
     /**
-     * Yanıttan JSON kısmını çıkarır
+     * Yanıttan JSON kısmını çıkarır - iyileştirilmiş versiyon
      */
     private static String extractJsonFromResponse(String responseText) {
+        if (responseText == null || responseText.trim().isEmpty()) {
+            throw new RuntimeException("Yanıt metni boş");
+        }
+        
+        // Trim yap
+        responseText = responseText.trim();
+        
+        // Eğer zaten tam JSON formatındaysa (başında { ve sonunda })
+        if (responseText.startsWith("{") && responseText.endsWith("}")) {
+            // Basit doğrulama: parantez sayısını kontrol et
+            long openBraces = responseText.chars().filter(ch -> ch == '{').count();
+            long closeBraces = responseText.chars().filter(ch -> ch == '}').count();
+            
+            if (openBraces == closeBraces) {
+                return responseText;
+            }
+        }
+        
         // İlk { karakterini bul
         int startIndex = responseText.indexOf('{');
         if (startIndex == -1) {
-            throw new RuntimeException("JSON bulunamadı");
+            throw new RuntimeException("JSON bulunamadı - yanıt metninde '{' karakteri yok. Yanıt: " + 
+                (responseText.length() > 200 ? responseText.substring(0, 200) + "..." : responseText));
         }
         
-        // Son } karakterini bul (en sondan)
-        int lastIndex = responseText.lastIndexOf('}');
-        if (lastIndex == -1 || lastIndex <= startIndex) {
-            // Eğer } yoksa, JSON'u tamamlamaya çalış
-            String jsonPart = responseText.substring(startIndex);
-            jsonPart = jsonPart.replace("\n", "").replace("\r", "").trim();
-            
-            // Eğer } ile bitmiyorsa ekle
-            if (!jsonPart.endsWith("}")) {
-                jsonPart += "}";
+        // Nested JSON için doğru kapanış parantezini bul
+        int braceCount = 0;
+        int lastIndex = -1;
+        
+        for (int i = startIndex; i < responseText.length(); i++) {
+            char c = responseText.charAt(i);
+            if (c == '{') {
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+                if (braceCount == 0) {
+                    lastIndex = i;
+                    break;
+                }
             }
-            
-            return jsonPart;
+        }
+        
+        // Eğer kapanış bulunamadıysa
+        if (lastIndex == -1 || lastIndex <= startIndex) {
+            // Son } karakterini kullan
+            lastIndex = responseText.lastIndexOf('}');
+            if (lastIndex <= startIndex) {
+                // JSON tamamlanmamış olabilir (kesilmiş), tamamlamaya çalış
+                String jsonPart = responseText.substring(startIndex);
+                // Temizle
+                jsonPart = jsonPart.replace("\n", " ").replace("\r", " ").replaceAll("\\s+", " ").trim();
+                
+                // Açık parantezleri say ve kapat
+                int openBraces = (int) jsonPart.chars().filter(ch -> ch == '{').count();
+                int closeBraces = (int) jsonPart.chars().filter(ch -> ch == '}').count();
+                int openBrackets = (int) jsonPart.chars().filter(ch -> ch == '[').count();
+                int closeBrackets = (int) jsonPart.chars().filter(ch -> ch == ']').count();
+                
+                // Eksik kapanış parantezlerini ekle
+                while (closeBraces < openBraces) {
+                    jsonPart += "}";
+                    closeBraces++;
+                }
+                while (closeBrackets < openBrackets) {
+                    jsonPart += "]";
+                    closeBrackets++;
+                }
+                
+                // Son } eksikse ekle
+                if (!jsonPart.endsWith("}")) {
+                    jsonPart += "}";
+                }
+                
+                return jsonPart;
+            }
         }
         
         // JSON kısmını çıkar
         String jsonPart = responseText.substring(startIndex, lastIndex + 1);
         
-        // Satır sonlarını temizle
-        return jsonPart.replace("\n", "").replace("\r", "").trim();
+        // Fazla whitespace'leri temizle (ama JSON içindeki boşlukları koru)
+        // Sadece satır sonlarını space'e çevir
+        jsonPart = jsonPart.replace("\n", " ").replace("\r", " ");
+        // Birden fazla ardışık boşluğu tek boşluğa indir (ama JSON string değerlerini koru)
+        jsonPart = jsonPart.replaceAll("(\\s)(?=\\s)", ""); // Sadece ardışık whitespace'leri temizle
+        
+        return jsonPart.trim();
     }
 
+    /**
+     * Analiz sonucunu normalize eder - object array formatını string array formatına çevirir
+     */
+    private static JsonNode normalizeAnalysisResult(JsonNode result) {
+        ObjectNode normalized = MAPPER.createObjectNode();
+        
+        // Her bir field için kontrol et
+        String[] fields = {"functionalRequirements", "nonFunctionalRequirements", "missingInformation", "priorityHints"};
+        
+        for (String field : fields) {
+            if (result.has(field) && result.get(field).isArray()) {
+                com.fasterxml.jackson.databind.node.ArrayNode stringArray = MAPPER.createArrayNode();
+                JsonNode arrayNode = result.get(field);
+                
+                for (JsonNode item : arrayNode) {
+                    if (item.isTextual()) {
+                        // Zaten string ise direkt ekle
+                        stringArray.add(item.asText());
+                    } else if (item.isObject()) {
+                        // Object ise "text", "hint" veya "description" field'ını al
+                        String textValue = null;
+                        if (item.has("text")) {
+                            textValue = item.get("text").asText();
+                        } else if (item.has("hint")) {
+                            textValue = item.get("hint").asText();
+                        } else if (item.has("description")) {
+                            textValue = item.get("description").asText();
+                        } else {
+                            // Eğer hiçbir field yoksa, ilk text field'ını dene
+                            java.util.Iterator<java.util.Map.Entry<String, JsonNode>> fieldIterator = item.fields();
+                            while (fieldIterator.hasNext()) {
+                                java.util.Map.Entry<String, JsonNode> entry = fieldIterator.next();
+                                if (entry.getValue().isTextual()) {
+                                    textValue = entry.getValue().asText();
+                                    break; // İlk text field'ını al ve çık
+                                }
+                            }
+                        }
+                        if (textValue != null && !textValue.isEmpty()) {
+                            stringArray.add(textValue);
+                        }
+                    }
+                }
+                
+                normalized.set(field, stringArray);
+            } else if (result.has(field)) {
+                // Field varsa ama array değilse, koru
+                normalized.set(field, result.get(field));
+            } else {
+                // Field yoksa boş array ekle
+                normalized.set(field, MAPPER.createArrayNode());
+            }
+        }
+        
+        return normalized;
+    }
+    
     /**
      * Rapor oluşturur
      */
@@ -433,7 +551,7 @@ public class OllamaClient {
         String requestBody = requestNode.toString();
 
         RequestBody body = RequestBody.create(
-                MediaType.parse("application/json"), requestBody);
+                requestBody, MediaType.get("application/json"));
 
         Request request = new Request.Builder()
                 .url(OLLAMA_URL)
@@ -452,14 +570,38 @@ public class OllamaClient {
 
         if (root.has("response")) {
             String responseText = root.get("response").asText();
+            
+            // Debug için response'u logla (ilk 500 karakter)
+            String debugPreview = responseText.length() > 500 
+                ? responseText.substring(0, 500) + "..." 
+                : responseText;
+            System.err.println("Ollama yanıtı (ilk 500 karakter): " + debugPreview);
+            
             try {
                 String jsonPart = extractJsonFromResponse(responseText);
+                System.err.println("Çıkarılan JSON kısmı: " + 
+                    (jsonPart.length() > 500 ? jsonPart.substring(0, 500) + "..." : jsonPart));
+                
                 analysisResult = MAPPER.readTree(jsonPart);
+                
+                // JSON'un beklenen yapıda olduğunu kontrol et
+                if (!analysisResult.isObject()) {
+                    throw new IOException("Parse edilen sonuç bir JSON objesi değil");
+                }
+                
+                // Object array formatını string array formatına normalize et
+                analysisResult = normalizeAnalysisResult(analysisResult);
+                
             } catch (Exception e) {
-                throw new IOException("JSON parse hatası: " + responseText);
+                String errorMsg = "JSON parse hatası: " + e.getMessage() + 
+                    "\nOllama yanıtı: " + (responseText.length() > 1000 ? responseText.substring(0, 1000) + "..." : responseText);
+                System.err.println(errorMsg);
+                e.printStackTrace();
+                throw new IOException(errorMsg, e);
             }
         } else {
-            throw new IOException("Geçersiz yanıt formatı");
+            throw new IOException("Geçersiz yanıt formatı - 'response' alanı bulunamadı. Yanıt: " + 
+                (responseBody.length() > 500 ? responseBody.substring(0, 500) + "..." : responseBody));
         }
 
         return analysisResult;

@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch WebApplication",
+            "request": "launch",
+            "mainClass": "com.selda.rag.WebApplication",
+            "projectName": "ba-llm",
+            "args": "",
+            "vmArgs": "-Dserver.port=8080"
+        },
+        {
+            "type": "java",
+            "name": "Launch App",
+            "request": "launch",
+            "mainClass": "com.selda.rag.App",
+            "projectName": "ba-llm"
+        },
+        {
+            "type": "java",
+            "name": "Launch OllamaClient",
+            "request": "launch",
+            "mainClass": "com.selda.rag.OllamaClient",
+            "projectName": "ba-llm"
+        }
+    ]
+}
+
+

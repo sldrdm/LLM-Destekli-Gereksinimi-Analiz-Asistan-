@@ -106,7 +106,7 @@ public class BatchAnalyzer {
                 .toString();
 
         RequestBody body = RequestBody.create(
-                MediaType.parse("application/json"), requestBody);
+                requestBody, MediaType.get("application/json"));
 
         Request request = new Request.Builder()
                 .url(OLLAMA_URL)

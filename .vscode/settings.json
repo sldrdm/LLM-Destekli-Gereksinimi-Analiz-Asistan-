@@ -1,0 +1,26 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.configuration.runtimes": [],
+    "java.project.sourcePaths": [
+        "src/main/java"
+    ],
+    "java.project.outputPath": "target/classes",
+    "java.project.referencedLibraries": [
+        "target/**/*.jar",
+        "lib/**/*.jar"
+    ],
+    "maven.executable.path": "mvn",
+    "maven.terminal.useJavaHome": true,
+    "java.configuration.maven.userSettings": null,
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": false,
+        "**/.factorypath": true
+    },
+    "files.associations": {
+        "*.properties": "properties"
+    }
+}
+
