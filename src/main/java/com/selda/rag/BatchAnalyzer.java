@@ -89,14 +89,15 @@ public class BatchAnalyzer {
     private static FileAnalysis analyzeFile(File file) throws IOException {
         String content = DocumentReader.readDocument(file.getAbsolutePath());
         
-        String prompt = "Respond ONLY with valid JSON matching this schema:\n" +
+        String prompt = "SADECE bu şemaya uyan geçerli JSON ile yanıt ver:\n" +
+                "CRITICAL: TÜM YANITLAR TÜRKÇE OLMALIDIR.\n" +
                 "{\n" +
                 "  \"functionalRequirements\": [\"string\"],\n" +
                 "  \"nonFunctionalRequirements\": [\"string\"],\n" +
                 "  \"missingInformation\": [\"string\"],\n" +
                 "  \"priorityHints\": [\"string\"]\n" +
                 "}\n" +
-                "ORIGINAL requirement:\n" +
+                "Analiz edilecek gereksinim metni:\n" +
                 content;
 
         String requestBody = MAPPER.createObjectNode()

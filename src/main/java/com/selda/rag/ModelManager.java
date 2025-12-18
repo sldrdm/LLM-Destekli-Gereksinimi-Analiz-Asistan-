@@ -112,60 +112,63 @@ public class ModelManager {
     }
     
     private String getDefaultPromptTemplate() {
-        return "IMPORTANT: You MUST respond with ONLY valid JSON. No explanations, no additional text before or after the JSON.\n\n" +
-                "Required JSON schema - each field must be an array of STRINGS (not objects):\n" +
+        return "ÖNEMLİ: SADECE geçerli JSON ile yanıt ver. Açıklama yok, JSON öncesi veya sonrası metin yok.\n" +
+                "CRITICAL: TÜM YANITLAR TÜRKÇE OLMALIDIR. Respond in TURKISH language only.\n\n" +
+                "Gerekli JSON şeması - her alan STRING dizisi olmalı (obje değil):\n" +
                 "{\n" +
-                "  \"functionalRequirements\": [\"string1\", \"string2\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"string1\", \"string2\"],\n" +
-                "  \"missingInformation\": [\"string1\", \"string2\"],\n" +
-                "  \"priorityHints\": [\"string1\", \"string2\"]\n" +
+                "  \"functionalRequirements\": [\"gereksinim1\", \"gereksinim2\"],\n" +
+                "  \"nonFunctionalRequirements\": [\"gereksinim1\", \"gereksinim2\"],\n" +
+                "  \"missingInformation\": [\"eksik1\", \"eksik2\"],\n" +
+                "  \"priorityHints\": [\"ipucu1\", \"ipucu2\"]\n" +
                 "}\n\n" +
-                "CRITICAL: Each array element must be a plain string, NOT an object. Example: [\"item1\", \"item2\"], NOT [{\"text\": \"item1\"}]\n\n" +
-                "Analyze the following requirement text and respond with ONLY the JSON object (starting with { and ending with }):\n\n" +
+                "KRİTİK: Her dizi elemanı düz string olmalı, obje DEĞİL. Örnek: [\"madde1\", \"madde2\"], [{\"text\": \"madde1\"}] DEĞİL\n\n" +
+                "Aşağıdaki gereksinim metnini analiz et ve SADECE JSON objesi ile yanıt ver ({ ile başlayıp } ile biten):\n\n" +
                 "{content}";
     }
     
     private String getEnhancedPromptTemplate() {
-        return "You are an expert software requirements analyst.\n\n" +
-                "CRITICAL: Respond with ONLY valid JSON. No explanations, no markdown, no code blocks, no text before or after.\n\n" +
-                "Required JSON schema - arrays must contain STRINGS, not objects:\n" +
+        return "Sen uzman bir yazılım gereksinim analistisin.\n" +
+                "CRITICAL: TÜM YANITLAR TÜRKÇE OLMALIDIR. Respond in TURKISH language only.\n\n" +
+                "KRİTİK: SADECE geçerli JSON ile yanıt ver. Açıklama yok, markdown yok, kod bloğu yok, öncesi/sonrası metin yok.\n\n" +
+                "Gerekli JSON şeması - diziler STRING içermeli, obje değil:\n" +
                 "{\n" +
-                "  \"functionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
-                "  \"missingInformation\": [\"missing item 1\", \"missing item 2\"],\n" +
-                "  \"priorityHints\": [\"hint 1\", \"hint 2\"]\n" +
+                "  \"functionalRequirements\": [\"gereksinim 1\", \"gereksinim 2\"],\n" +
+                "  \"nonFunctionalRequirements\": [\"gereksinim 1\", \"gereksinim 2\"],\n" +
+                "  \"missingInformation\": [\"eksik madde 1\", \"eksik madde 2\"],\n" +
+                "  \"priorityHints\": [\"ipucu 1\", \"ipucu 2\"]\n" +
                 "}\n\n" +
-                "IMPORTANT: Each array must be an array of strings like [\"text1\", \"text2\"]. Do NOT use objects like [{\"text\": \"...\"}].\n\n" +
-                "Guidelines:\n" +
-                "- Functional requirements: What the system should do (as plain strings)\n" +
-                "- Non-functional requirements: Performance, security, usability (as plain strings)\n" +
-                "- Missing information: What additional details are needed (as plain strings)\n" +
-                "- Priority hints: Suggested implementation priority (as plain strings)\n\n" +
-                "Requirement text to analyze:\n" +
+                "ÖNEMLİ: Her dizi [\"metin1\", \"metin2\"] şeklinde string dizisi olmalı. [{\"text\": \"...\"}] şeklinde obje KULLANMA.\n\n" +
+                "Kılavuz:\n" +
+                "- Fonksiyonel gereksinimler: Sistemin ne yapması gerektiği (düz string olarak)\n" +
+                "- Fonksiyonel olmayan gereksinimler: Performans, güvenlik, kullanılabilirlik (düz string olarak)\n" +
+                "- Eksik bilgiler: Hangi ek detaylar gerekli (düz string olarak)\n" +
+                "- Öncelik ipuçları: Önerilen uygulama önceliği (düz string olarak)\n\n" +
+                "Analiz edilecek gereksinim metni:\n" +
                 "{content}\n\n" +
-                "Remember: Respond with ONLY the JSON object with string arrays, nothing else.";
+                "Unutma: SADECE string dizileri içeren JSON objesi ile yanıt ver, başka hiçbir şey yazma. TÜRKÇE yanıt ver.";
     }
     
     private String getDetailedPromptTemplate() {
-        return "You are a senior software architect and requirements analyst with 20+ years experience.\n\n" +
-                "CRITICAL: Your response must be ONLY valid JSON. No explanations, no markdown formatting, no code blocks, no text outside the JSON object.\n\n" +
-                "Required JSON schema - all arrays must contain STRINGS only:\n" +
+        return "Sen 20+ yıl deneyimli kıdemli bir yazılım mimarı ve gereksinim analistisin.\n" +
+                "CRITICAL: TÜM YANITLAR TÜRKÇE OLMALIDIR. Respond in TURKISH language only.\n\n" +
+                "KRİTİK: Yanıtın SADECE geçerli JSON olmalı. Açıklama yok, markdown formatı yok, kod bloğu yok, JSON objesi dışında metin yok.\n\n" +
+                "Gerekli JSON şeması - tüm diziler SADECE STRING içermeli:\n" +
                 "{\n" +
-                "  \"functionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
-                "  \"nonFunctionalRequirements\": [\"requirement 1\", \"requirement 2\"],\n" +
-                "  \"missingInformation\": [\"missing item 1\", \"missing item 2\"],\n" +
-                "  \"priorityHints\": [\"hint 1\", \"hint 2\"]\n" +
+                "  \"functionalRequirements\": [\"gereksinim 1\", \"gereksinim 2\"],\n" +
+                "  \"nonFunctionalRequirements\": [\"gereksinim 1\", \"gereksinim 2\"],\n" +
+                "  \"missingInformation\": [\"eksik madde 1\", \"eksik madde 2\"],\n" +
+                "  \"priorityHints\": [\"ipucu 1\", \"ipucu 2\"]\n" +
                 "}\n\n" +
-                "CRITICAL: Use string arrays [\"text1\", \"text2\"], NOT object arrays [{\"text\": \"...\"}]. Each element must be a plain string.\n\n" +
-                "Analysis Guidelines:\n" +
-                "- Functional: Specific system behaviors and capabilities (as string array)\n" +
-                "- Non-functional: Performance, scalability, security, maintainability (as string array)\n" +
-                "- Missing: Gaps in requirements, unclear specifications (as string array)\n" +
-                "- Priority: Risk assessment and implementation order (as string array)\n\n" +
-                "Consider technical feasibility, business value, and implementation complexity.\n\n" +
-                "Requirement text:\n" +
+                "KRİTİK: String dizileri kullan [\"metin1\", \"metin2\"], obje dizileri DEĞİL [{\"text\": \"...\"}]. Her eleman düz string olmalı.\n\n" +
+                "Analiz Kılavuzu:\n" +
+                "- Fonksiyonel: Belirli sistem davranışları ve yetenekleri (string dizisi olarak)\n" +
+                "- Fonksiyonel olmayan: Performans, ölçeklenebilirlik, güvenlik, sürdürülebilirlik (string dizisi olarak)\n" +
+                "- Eksik: Gereksinimlerdeki boşluklar, belirsiz spesifikasyonlar (string dizisi olarak)\n" +
+                "- Öncelik: Risk değerlendirmesi ve uygulama sırası (string dizisi olarak)\n\n" +
+                "Teknik fizibilite, iş değeri ve uygulama karmaşıklığını göz önünde bulundur.\n\n" +
+                "Gereksinim metni:\n" +
                 "{content}\n\n" +
-                "Respond with ONLY the JSON object with string arrays, starting with { and ending with }.";
+                "SADECE string dizileri içeren JSON objesi ile yanıt ver, { ile başlayıp } ile biten. TÜRKÇE yanıt ver.";
     }
     
     private void loadFromFile() throws IOException {

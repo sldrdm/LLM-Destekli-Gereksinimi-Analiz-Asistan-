@@ -48,6 +48,6 @@
     "promptTemplate" : "You are a senior software architect and requirements analyst with 20+ years experience. Provide a comprehensive analysis in valid JSON format matching this schema:\n{\n  \"functionalRequirements\": [\"string\"],\n  \"nonFunctionalRequirements\": [\"string\"],\n  \"missingInformation\": [\"string\"],\n  \"priorityHints\": [\"string\"]\n}\nAnalysis Guidelines:\n- Functional: Specific system behaviors and capabilities\n- Non-functional: Performance, scalability, security, maintainability\n- Missing: Gaps in requirements, unclear specifications\n- Priority: Risk assessment and implementation order\nConsider technical feasibility, business value, and implementation complexity.\nRequirement text:\n{content}",
     "enabled" : true
   } ],
-  "lastUpdated" : 1760711537796,
+  "lastUpdated" : 1766067980939,
   "currentModel" : "llama3:latest"
 }
