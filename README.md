@@ -153,6 +153,9 @@ http://localhost:8080
 
 ## 🎯 Kullanım
 
+![BALLM Gereksinim Analizi](https://github.com/user-attachments/assets/6cf68915-b94d-475e-84f0-96c4a9d42d7c)
+
+
 ### Web Arayüzü
 
 1. **Dosya Yükleme**: PDF veya Word dosyası seçin
